@@ -1,15 +1,9 @@
 import { Constants } from "youtubei.js";
-import { getVersion as originalGetVersion } from "@imput/version-info";
+import { getVersion } from "@imput/version-info";
 import { services } from "./processing/service-config.js";
 import { supportsReusePort } from "./misc/cluster.js";
 
-// Safe version fetch with fallback
-let version = "unknown";
-try {
-    version = await originalGetVersion();
-} catch (err) {
-    console.warn("Warning: Unable to determine version from git. Defaulting to 'unknown'.");
-}
+const version = await getVersion();
 
 const disabledServices = process.env.DISABLED_SERVICES?.split(',') || [];
 const enabledServices = new Set(Object.keys(services).filter(e => {
@@ -31,14 +25,14 @@ const env = {
 
     cookiePath: process.env.COOKIE_PATH,
 
-    rateLimitWindow: parseInt(process.env.RATELIMIT_WINDOW) || 60,
-    rateLimitMax: parseInt(process.env.RATELIMIT_MAX) || 20,
+    rateLimitWindow: (process.env.RATELIMIT_WINDOW && parseInt(process.env.RATELIMIT_WINDOW)) || 60,
+    rateLimitMax: (process.env.RATELIMIT_MAX && parseInt(process.env.RATELIMIT_MAX)) || 20,
 
-    sessionRateLimitWindow: parseInt(process.env.SESSION_RATELIMIT_WINDOW) || 60,
-    sessionRateLimit: parseInt(process.env.SESSION_RATELIMIT) || 10,
+    sessionRateLimitWindow: (process.env.SESSION_RATELIMIT_WINDOW && parseInt(process.env.SESSION_RATELIMIT_WINDOW)) || 60,
+    sessionRateLimit: (process.env.SESSION_RATELIMIT && parseInt(process.env.SESSION_RATELIMIT)) || 10,
 
-    durationLimit: parseInt(process.env.DURATION_LIMIT) || 10800,
-    streamLifespan: parseInt(process.env.TUNNEL_LIFESPAN) || 90,
+    durationLimit: (process.env.DURATION_LIMIT && parseInt(process.env.DURATION_LIMIT)) || 10800,
+    streamLifespan: (process.env.TUNNEL_LIFESPAN && parseInt(process.env.TUNNEL_LIFESPAN)) || 90,
 
     processingPriority: process.platform !== 'win32'
         && process.env.PROCESSING_PRIORITY
@@ -52,13 +46,13 @@ const env = {
     jwtLifetime: process.env.JWT_EXPIRY || 120,
 
     sessionEnabled: process.env.TURNSTILE_SITEKEY
-        && process.env.TURNSTILE_SECRET
-        && process.env.JWT_SECRET,
+                        && process.env.TURNSTILE_SECRET
+                        && process.env.JWT_SECRET,
 
     apiKeyURL: process.env.API_KEY_URL && new URL(process.env.API_KEY_URL),
     authRequired: process.env.API_AUTH_REQUIRED === '1',
     redisURL: process.env.API_REDIS_URL,
-    instanceCount: parseInt(process.env.API_INSTANCE_COUNT) || 1,
+    instanceCount: (process.env.API_INSTANCE_COUNT && parseInt(process.env.API_INSTANCE_COUNT)) || 1,
     keyReloadInterval: 900,
 
     enabledServices,
@@ -67,7 +61,7 @@ const env = {
     ytSessionServer: process.env.YOUTUBE_SESSION_SERVER,
     ytSessionReloadInterval: 300,
     ytSessionInnertubeClient: process.env.YOUTUBE_SESSION_INNERTUBE_CLIENT,
-};
+}
 
 const genericUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36";
 const cobaltUserAgent = `cobalt/${version} (+https://github.com/imputnet/cobalt)`;
@@ -82,9 +76,9 @@ if (env.sessionEnabled && env.jwtSecret.length < 16) {
 if (env.instanceCount > 1 && !env.redisURL) {
     throw new Error("API_REDIS_URL is required when API_INSTANCE_COUNT is >= 2");
 } else if (env.instanceCount > 1 && !await supportsReusePort()) {
-    console.error('API_INSTANCE_COUNT is not supported in your environment. To use this env, your Node.js');
-    console.error('version must be >= 23.1.0, and you must be running a recent enough version of Linux');
-    console.error('(or other OS that supports it). For more info, see `reusePort` option on');
+    console.error('API_INSTANCE_COUNT is not supported in your environment. to use this env, your node.js');
+    console.error('version must be >= 23.1.0, and you must be running a recent enough version of linux');
+    console.error('(or other OS that supports it). for more info, see `reusePort` option on');
     console.error('https://nodejs.org/api/net.html#serverlistenoptions-callback');
     throw new Error('SO_REUSEPORT is not supported');
 }
@@ -99,4 +93,4 @@ export {
     env,
     genericUserAgent,
     cobaltUserAgent,
-};
+}
